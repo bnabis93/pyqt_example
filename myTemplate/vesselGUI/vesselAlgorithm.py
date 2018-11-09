@@ -160,6 +160,8 @@ class rotateMorphSeg():
         cv2.imwrite('segmentedImg.png', self.segmentedImg *255)
 
     def getImg(self):
+        #self.claheImg = interval_mapping(self.claheImg,0.0,1.0,0,255).astype('uint8')
+        #self.rotateMorImg = interval_mapping(self.rotateMorImg,0.0,1.0,0,255).astype('uint8')
         return self.oriImg,self.claheImg,self.rotateMorImg,self.segmentedImg
 
 
