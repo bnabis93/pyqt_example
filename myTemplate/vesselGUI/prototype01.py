@@ -10,8 +10,10 @@
 #
 # _developer : qhsh9713@gmail.com
 
+
 from PyQt5 import QtCore, QtGui, QtWidgets
-from PyQt5.QtWidgets import QFileDialog,QWidget,QLabel
+from PyQt5.QtWidgets import QFileDialog,QWidget,QLabel, QApplication, QMainWindow, QMenu, QVBoxLayout, QSizePolicy, QMessageBox, QPushButton
+
 from PyQt5.QtCore import QThread
 from PyQt5.QtGui import QImage,QPixmap
 
@@ -20,6 +22,18 @@ from PyQt5.QtGui import QStandardItem
 import vesselAlgorithm
 from vesselAlgorithm import rotateMorphSeg
 from vesselAlgorithm import interval_mapping
+from skimage import io
+
+
+
+
+import matplotlib
+matplotlib.use('TkAgg')
+from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
+from matplotlib.figure import Figure
+import matplotlib.pyplot as plt
+
+
 print('vessel_algorithm import')
 
 class Ui_MainWindow(QtWidgets.QMainWindow):
@@ -77,6 +91,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.graphicsView_4.setObjectName("graphicsView_4")
         self.gridLayout_2.addWidget(self.graphicsView_4, 1, 0, 1, 1)
 
+
+        # histogram grid
         self.gridLayoutWidget_3 = QtWidgets.QWidget(self.centralwidget)
         self.gridLayoutWidget_3.setGeometry(QtCore.QRect(20, 330, 231, 191))
         self.gridLayoutWidget_3.setObjectName("gridLayoutWidget_3")
@@ -213,6 +229,16 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.gridLayout_2.addWidget(label_Image02, 0, 1, 1, 1)
 
 
+        ########### plotting histogram area ####################
+        tempForHisImg01 = io.imread(tempClahePath)
+        plotImg01 = PlotCanvas(tempForHisImg01)
+        self.gridLayout_3.addWidget(plotImg01,1, 0, 1, 1)
+
+        tempForHisImg02 = io.imread(tempRotatePath)
+        plotImg02 = PlotCanvas(tempForHisImg02)
+        self.gridLayout_3.addWidget(plotImg02,0, 1, 1, 1)
+        ########################################################
+
     #def getQImg(self,Img):
     def convert_numpy_img_to_qpixmap(self,np_img):
         height, width = np_img.shape
@@ -242,6 +268,11 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         #    self.gridLayout_2.itemAt(i).widget().deleteLater() 
         self.gridLayout_2.addWidget(label_Image, 0, 0, 1, 1)
         
+        # plot histogram
+        tempForHisImg = io.imread(self.oriImgPath)
+        plotImg = PlotCanvas(tempForHisImg)
+        self.gridLayout_3.addWidget(plotImg,0, 0, 1, 1)
+
         self.prevImg = label_Image
         # list view control 
         if tempFlag == True:
@@ -254,8 +285,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             model.appendRow(QStandardItem(item))
             self.listView.setModel(model)
             tempFlag = False
-    
-
 
 
     def fileNameParser(self,fileName):
@@ -299,6 +328,44 @@ class fileDialog(QWidget):
     def getFileName(self):
         return self.fPath
 '''
+
+class PlotCanvas(FigureCanvas):
+ 
+    def __init__(self,img,parent = None,width=3, height=2, dpi=100):
+        #width=5; height=4; dpi=100; parent = None
+        self.tempImg = img
+        fig = Figure(figsize=(width, height), dpi=dpi)
+        fig.tight_layout()
+        fig.subplots_adjust(0.2, 0.2, 0.8, 0.8)
+        self.axes = fig.add_subplot(111)
+        FigureCanvas.__init__(self, fig)
+        self.setParent(parent)
+ 
+        FigureCanvas.setSizePolicy(self,
+                QSizePolicy.Expanding,
+                QSizePolicy.Expanding)
+        FigureCanvas.updateGeometry(self)
+        self.plotImg(self.tempImg)
+
+ 
+ 
+
+    def plotImg(self,img,dtype = 'float'):
+        if (dtype=='float') :
+            ax = self.figure.add_subplot(111)
+            ax.hist(img.ravel(),256,[img.min(),img.max()])
+            #ax.set_title('Histogram for gray scale picture')
+            #ax.xaxis.set_major_locator([0,1])
+            self.draw()
+            #plt.show()
+
+        elif (dtype == 'int'):
+            ax = self.figure.add_subplot(111)
+            ax.hist(img.ravel(),256,[0,256])
+            #ax.set_title('Histogram for gray scale picture')
+           # ax.xaxis.set_major_locator([0,255])
+            self.draw()
+
 
 if __name__ == "__main__":
     import sys
