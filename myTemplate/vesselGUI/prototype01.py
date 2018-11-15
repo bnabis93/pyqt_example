@@ -23,7 +23,11 @@ import vesselAlgorithm
 from vesselAlgorithm import rotateMorphSeg
 from vesselAlgorithm import interval_mapping
 from skimage import io
-
+from PyQt5.QtCore import QAbstractListModel
+from PyQt5.QtCore import Qt
+from PyQt5.QtCore import QVariant
+from PyQt5.QtGui import QBrush
+from PyQt5.QtGui import QColor
 
 
 
@@ -66,6 +70,11 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.pushButton.setGeometry(QtCore.QRect(140, 130, 114, 32))
         self.pushButton.setObjectName("pushButton")     
         self.pushButton.clicked.connect(self.pushAnalysisButtonClicked)
+
+        self.pushButton_3 = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_3.setGeometry(QtCore.QRect(140, 157, 114, 32))
+        self.pushButton_3.setObjectName("pushButton_3")
+        self.pushButton_3.clicked.connect(self.pushParamButtonClicked)
 
 
         self.gridLayoutWidget_2 = QtWidgets.QWidget(self.centralwidget)
@@ -113,10 +122,11 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.graphicsView_8.setObjectName("graphicsView_8")
 
         self.gridLayout_3.addWidget(self.graphicsView_8, 1, 1, 1, 1)
-        self.progressBar = QtWidgets.QProgressBar(self.centralwidget)
-        self.progressBar.setGeometry(QtCore.QRect(295, 205, 181, 71))
-        self.progressBar.setProperty("value", 24)
-        self.progressBar.setObjectName("progressBar")
+       
+        #self.progressBar = QtWidgets.QProgressBar(self.centralwidget)
+        #self.progressBar.setGeometry(QtCore.QRect(295, 205, 181, 71))
+        #self.progressBar.setProperty("value", 24)
+        #self.progressBar.setObjectName("progressBar")
         ################ List view ##################
         #data manager 
         self.listView = QtWidgets.QListView(self.centralwidget)
@@ -163,6 +173,8 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 22))
         self.menubar.setObjectName("menubar")
         MainWindow.setMenuBar(self.menubar)
+        
+        # status bar 
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
@@ -173,10 +185,11 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Vessel GUI"))
-        self.pushButton.setText(_translate("MainWindow", "Analysis"))
+        self.pushButton.setText(_translate("MainWindow", "Segmentation"))
+        self.pushButton_2.setText(_translate("MainWindow", "Data load"))
+        self.pushButton_3.setText(_translate("MainWindow", "Get Parameter"))
         self.label.setText(_translate("MainWindow", "Data Manager"))
         self.label_2.setText(_translate("MainWindow", "Histogram"))
-        self.pushButton_2.setText(_translate("MainWindow", "Data load"))
         self.toolButton_3.setText(_translate("MainWindow", "확대"))
         self.toolButton_4.setText(_translate("MainWindow", "관심 영역"))
         self.label_4.setText(_translate("MainWindow", "Parameter"))
@@ -286,6 +299,16 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             self.listView.setModel(model)
             tempFlag = False
 
+    def pushParamButtonClicked(self):
+        # param = getParam()
+        Params = [
+            {"name": "Param1", "color": "yellow", "bg_color": "yellow"},
+            {"name": "Param2", "color": "red", "bg_color": "red"},
+            {"name": "Param3", "color": "green", "bg_color": "gray"},
+        ]
+        model = UserModel(Params)
+        self.listView_2.setModel(model)
+
 
     def fileNameParser(self,fileName):
         # '/' 기준으로 단어들을 Parsing 한 후 제일 마지막 단어를 선택하면 될 듯.
@@ -365,6 +388,26 @@ class PlotCanvas(FigureCanvas):
             #ax.set_title('Histogram for gray scale picture')
            # ax.xaxis.set_major_locator([0,255])
             self.draw()
+class UserModel(QAbstractListModel):
+    def __init__(self, data=None, parent=None):
+        QAbstractListModel.__init__(self, parent)
+        self._data = data
+
+    def rowCount(self, parent=None, *args, **kwargs):
+        return len(self._data)
+
+    def data(self, QModelIndex, role=None):
+        item = self._data[QModelIndex.row()]
+
+        if role == Qt.DisplayRole:
+            return "%s" % (item['name'])
+        elif role == Qt.DecorationRole:
+            return QColor(item['color'])
+        elif role == Qt.BackgroundRole:
+            return QBrush(Qt.Dense7Pattern)
+        elif role == Qt.ToolTipRole:
+            return "Tool Tip: %s" % (item['name'])
+        return QVariant()
 
 
 if __name__ == "__main__":
