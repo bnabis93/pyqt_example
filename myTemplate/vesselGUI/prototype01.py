@@ -28,7 +28,7 @@ from PyQt5.QtCore import Qt
 from PyQt5.QtCore import QVariant
 from PyQt5.QtGui import QBrush
 from PyQt5.QtGui import QColor
-
+import os
 
 
 import matplotlib
@@ -44,6 +44,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
     def __init__(self,MainWindow):
         super(Ui_MainWindow,self).__init__()
 
+        self.curPath = os.path.dirname( os.path.abspath( __file__ ) )
         self.oriImgPath = None
         self.oriImgName = None
         self.prevImg = None
@@ -140,7 +141,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
         #############################################
 
-
         self.label = QtWidgets.QLabel(self.centralwidget)
         self.label.setGeometry(QtCore.QRect(86, 10, 101, 16))
         self.label.setAlignment(QtCore.Qt.AlignCenter)
@@ -219,8 +219,11 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         label_Image02.setPixmap(tempMorp)'''
 
         self.getImgData(self.oriImgPath)
-        tempClahePath = '/Users/hyeonwoojeong/Desktop/bono_workstation/projects/myPyQt/myTemplate/vesselGUI/uniformImg.png'
-        tempRotatePath = '/Users/hyeonwoojeong/Desktop/bono_workstation/projects/myPyQt/myTemplate/vesselGUI/rotateMorpImh.png'
+
+        ## 수정해야함
+        
+        tempClahePath = str(self.curPath) + '/uniformImg.png'
+        tempRotatePath = str(self.curPath) + '/rotateMorpImh.png'
 
         frame01 = QWidget() #Replace it with any frame you will putting this label_image on it
         label_Image01 = QLabel(frame01)
