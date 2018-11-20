@@ -62,7 +62,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
     def setupUi(self, MainWindow):
 
-
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")     
 
@@ -124,10 +123,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
 
         self.gridLayout_3.addWidget(self.graphicsView_8, 1, 1, 1, 1)
        
-        #self.progressBar = QtWidgets.QProgressBar(self.centralwidget)
-        #self.progressBar.setGeometry(QtCore.QRect(295, 205, 181, 71))
-        #self.progressBar.setProperty("value", 24)
-        #self.progressBar.setObjectName("progressBar")
+
         ################ List view ##################
         #data manager 
         self.listView = QtWidgets.QListView(self.centralwidget)
@@ -168,6 +164,31 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.label_4.setAlignment(QtCore.Qt.AlignCenter)
         self.label_4.setObjectName("label_4")
 
+        #################### slide Bar ####################
+
+        self.gridLayoutWidget = QtWidgets.QWidget(self.centralwidget)
+        self.gridLayoutWidget.setGeometry(QtCore.QRect(570, 471, 160, 80))
+        self.gridLayoutWidget.setObjectName("gridLayoutWidget")
+        self.gridLayout = QtWidgets.QGridLayout(self.gridLayoutWidget)
+        self.gridLayout.setContentsMargins(0, 0, 0, 0)
+        self.gridLayout.setObjectName("gridLayout")
+
+        self.slider1 = CustomSlider()
+        self.slider2 = CustomSlider()
+
+        #self.horizontalSlider = QtWidgets.QSlider(self.gridLayoutWidget)
+        #self.horizontalSlider.setOrientation(QtCore.Qt.Horizontal)
+        #self.horizontalSlider.setObjectName("horizontalSlider")
+        #self.horizontalSlider_2 = QtWidgets.QSlider(self.gridLayoutWidget)
+        #self.horizontalSlider_2.setOrientation(QtCore.Qt.Horizontal)
+        #self.horizontalSlider_2.setObjectName("horizontalSlider_2")
+
+        self.gridLayout.addWidget(self.slider1, 2, 0, 1, 1)
+        self.gridLayout.addWidget(self.slider2, 1, 0, 1, 1)
+
+        ###################################################
+
+
         MainWindow.setCentralWidget(self.centralwidget)
         self.menubar = QtWidgets.QMenuBar(MainWindow)
         self.menubar.setGeometry(QtCore.QRect(0, 0, 800, 22))
@@ -195,28 +216,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.label_4.setText(_translate("MainWindow", "Parameter"))
 
     def pushAnalysisButtonClicked(self):
-        '''
-        self.getImgData(self.oriImgPath)
-        print('interval_mapping fail?')
-        #temp01 = interval_mapping(self.claheImg,0.0,1.0,0,255).astype('uint8')
-        print("interval_mapping succ?")
-        frame = QWidget()
-        label_Image01 = QLabel(frame)
-        tempClahe = self.convert_numpy_img_to_qpixmap(self.claheImg)
-        print('convert succ?')
-        label_Image01.setPixmap(tempClahe)
-        self.gridLayout_2.addWidget(label_Image01, 1, 0, 1, 1)
-
-
-        print('interval_mapping fail02?')
-        #temp02 = interval_mapping(self.rotateMorImg,0.0,1.0,0,255).astype('uint8')
-        print("interval_mapping succ02?")
-
-        tempMorp = self.convert_numpy_img_to_qpixmap(self.rotateMorImg)
-
-        frame02 = QWidget()
-        label_Image02 = QLabel(frame02)
-        label_Image02.setPixmap(tempMorp)'''
 
         self.getImgData(self.oriImgPath)
 
@@ -309,6 +308,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
             {"name": "Param2", "color": "red", "bg_color": "red"},
             {"name": "Param3", "color": "green", "bg_color": "gray"},
         ]
+
         model = UserModel(Params)
         self.listView_2.setModel(model)
 
@@ -328,33 +328,6 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.vesselDataArray = self.oriImg , self.claheImg ,self.rotateMorImg ,self.segmentedImg
 
 
-    '''
-    def clearLayout(self,layout):
-        while layout.count():
-            child = layout.takeAt(0)
-        if child.widget():
-            child.widget().deleteLater()'''
-
-'''
-class fileDialog(QWidget):
-    def __init__(self,pushButton):
-        QThread.__init__(self)
-        print("what push button : ",type(pushButton))
-        self.fPath = None
-        self.pushButton = pushButton
-        print("what push button2 : ",type(pushButton))
-
-        self.pushButton.clicked.connect(self.pushButtonClicked)
-        self.getFileName()
-        # push -> file dialog event
-
-    def pushButtonClicked(self):
-        self.fPath = QFileDialog.getOpenFileName(self)
-    
-    def getFileName(self):
-        return self.fPath
-'''
-
 class PlotCanvas(FigureCanvas):
  
     def __init__(self,img,parent = None,width=3, height=2, dpi=100):
@@ -373,9 +346,6 @@ class PlotCanvas(FigureCanvas):
         FigureCanvas.updateGeometry(self)
         self.plotImg(self.tempImg)
 
- 
- 
-
     def plotImg(self,img,dtype = 'float'):
         if (dtype=='float') :
             ax = self.figure.add_subplot(111)
@@ -391,6 +361,8 @@ class PlotCanvas(FigureCanvas):
             #ax.set_title('Histogram for gray scale picture')
            # ax.xaxis.set_major_locator([0,255])
             self.draw()
+
+
 class UserModel(QAbstractListModel):
     def __init__(self, data=None, parent=None):
         QAbstractListModel.__init__(self, parent)
@@ -411,6 +383,46 @@ class UserModel(QAbstractListModel):
         elif role == Qt.ToolTipRole:
             return "Tool Tip: %s" % (item['name'])
         return QVariant()
+
+class CustomSlider(QtWidgets.QWidget):
+    def __init__(self, *args, **kwargs):
+        super(CustomSlider, self).__init__(*args, **kwargs)
+        MAXVAL = 10000
+        self.sliderMin = MAXVAL 
+        self.sliderMax = MAXVAL
+        self.slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+        self.slider.valueChanged.connect(self.handleSliderValueChange)
+        #value change(parameter = function)
+        self.numbox = QtWidgets.QSpinBox()
+        self.numbox.valueChanged.connect(self.handleNumboxValueChange)
+
+        #self.slider.setMaximumSize(QtCore.QSize(16777215, 25))
+
+        #set maximum value
+        self.slider.setMaximum(self.sliderMax)
+        self.numbox.setMaximum(self.sliderMax)
+        #self.slider.setValue(MAXVAL -500000)
+
+        print(self.slider.minimum())
+        print(self.slider.maximum())
+
+        layout = QtWidgets.QHBoxLayout(self)
+        layout.addWidget(self.numbox)
+        layout.addWidget(self.slider)
+
+    @QtCore.pyqtSlot(int)
+    def handleSliderValueChange(self, value):
+        self.numbox.setValue(value)
+
+    @QtCore.pyqtSlot(int)
+    def handleNumboxValueChange(self, value):
+        # Prevent values outside slider range
+        if value < self.slider.minimum():
+            self.numbox.setValue(self.slider.minimum())
+        elif value > self.slider.maximum():
+            self.numbox.setValue(self.slider.maximum())
+
+        self.slider.setValue(self.numbox.value())
 
 
 if __name__ == "__main__":
