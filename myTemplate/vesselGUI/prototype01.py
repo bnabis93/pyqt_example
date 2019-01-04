@@ -37,8 +37,11 @@ from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
 import matplotlib.pyplot as plt
 
+import cv2
+from skimage.filters import threshold_otsu
+from skimage import filters
+from skimage import morphology
 
-print('vessel_algorithm import')
 
 class Ui_MainWindow(QtWidgets.QMainWindow):
     def __init__(self,MainWindow):
@@ -52,8 +55,16 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         self.oriImg = None
         self.claheImg = None
         self.rotateMorImg = None
+        self.preSegImg =None
         self.segmentedImg = None
         self.vesselDataArray = []
+        self.segmentAlgorithm = None
+
+        self.segWidget = None
+
+        self.otsuValue = None
+
+
 
         MainWindow.setObjectName("MainWindow")
         MainWindow.resize(800, 600)
@@ -167,14 +178,14 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         #################### slide Bar ####################
 
         self.gridLayoutWidget = QtWidgets.QWidget(self.centralwidget)
-        self.gridLayoutWidget.setGeometry(QtCore.QRect(570, 471, 160, 80))
+        self.gridLayoutWidget.setGeometry(QtCore.QRect(570, 500, 160, 80))
         self.gridLayoutWidget.setObjectName("gridLayoutWidget")
         self.gridLayout = QtWidgets.QGridLayout(self.gridLayoutWidget)
         self.gridLayout.setContentsMargins(0, 0, 0, 0)
         self.gridLayout.setObjectName("gridLayout")
 
         self.slider1 = CustomSlider()
-        self.slider2 = CustomSlider()
+        #self.slider2 = CustomSlider()
 
         #self.horizontalSlider = QtWidgets.QSlider(self.gridLayoutWidget)
         #self.horizontalSlider.setOrientation(QtCore.Qt.Horizontal)
@@ -184,7 +195,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         #self.horizontalSlider_2.setObjectName("horizontalSlider_2")
 
         self.gridLayout.addWidget(self.slider1, 2, 0, 1, 1)
-        self.gridLayout.addWidget(self.slider2, 1, 0, 1, 1)
+        #self.gridLayout.addWidget(self.slider2, 1, 0, 1, 1)
 
         ###################################################
 
@@ -223,6 +234,7 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         
         tempClahePath = str(self.curPath) + '/uniformImg.png'
         tempRotatePath = str(self.curPath) + '/rotateMorpImh.png'
+        tempSegPath = str(self.curPath) + '/segmentedImg.png'
 
         frame01 = QWidget() #Replace it with any frame you will putting this label_image on it
         label_Image01 = QLabel(frame01)
@@ -240,9 +252,20 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         label_Image02.setPixmap(QtGui.QPixmap.fromImage(image_profile02)) 
         print(label_Image02)
 
+        frame03 = QWidget() #Replace it with any frame you will putting this label_image on it
+        label_Image03 = QLabel(frame03)
+        image_profile03 = QImage(tempSegPath) #QImage object
+
+        image_profile03 = image_profile03.scaled(250,250, aspectRatioMode=QtCore.Qt.KeepAspectRatio, transformMode=QtCore.Qt.SmoothTransformation) # To scale image for example and keep its Aspect Ration    
+        label_Image03.setPixmap(QtGui.QPixmap.fromImage(image_profile03)) 
+        print(label_Image03)
+
         self.gridLayout_2.addWidget(label_Image01, 1, 0, 1, 1)
         self.gridLayout_2.addWidget(label_Image02, 0, 1, 1, 1)
-
+        self.gridLayout_2.addWidget(label_Image03, 1, 1, 1, 1)
+        self.segWidget = label_Image03
+        print("prev grid : ",self.gridLayout_2)
+        print("prev widget : ",self.segWidget)
 
         ########### plotting histogram area ####################
         tempForHisImg01 = io.imread(tempClahePath)
@@ -252,7 +275,20 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         tempForHisImg02 = io.imread(tempRotatePath)
         plotImg02 = PlotCanvas(tempForHisImg02)
         self.gridLayout_3.addWidget(plotImg02,0, 1, 1, 1)
+
+        tempForHisImg03 = io.imread(tempSegPath)
+        plotImg03 = PlotCanvas(tempForHisImg03)
+        self.gridLayout_3.addWidget(plotImg03,1, 1, 1, 1)
         ########################################################
+
+
+        self.slider1.setImg(self.segmentedImg)
+        self.slider1.setHighVal(self.otsuValue)
+        self.slider1.setGrid(self.gridLayout_2)
+        self.slider1.setWidget(self.segWidget)
+        self.slider1.setSegPath(tempSegPath)
+
+
 
     #def getQImg(self,Img):
     def convert_numpy_img_to_qpixmap(self,np_img):
@@ -323,9 +359,13 @@ class Ui_MainWindow(QtWidgets.QMainWindow):
         return _fileName
 
     def getImgData(self,imgPath):
-        segmentAlgorithm = rotateMorphSeg(imgPath)
-        self.oriImg , self.claheImg ,self.rotateMorImg ,self.segmentedImg = segmentAlgorithm.getImg()
+        self.segmentAlgorithm = rotateMorphSeg(imgPath)
+        self.oriImg , self.claheImg ,self.rotateMorImg ,self.segmentedImg = self.segmentAlgorithm.getImg()
+
         self.vesselDataArray = self.oriImg , self.claheImg ,self.rotateMorImg ,self.segmentedImg
+
+        self.otsuValue = self.segmentAlgorithm.getSegmentedHighValue()
+        self.preSegImg = self.segmentAlgorithm.getPrevSegImg()
 
 
 class PlotCanvas(FigureCanvas):
@@ -388,6 +428,16 @@ class CustomSlider(QtWidgets.QWidget):
     def __init__(self, *args, **kwargs):
         super(CustomSlider, self).__init__(*args, **kwargs)
         MAXVAL = 10000
+
+        self.flag1 = 0
+        self.flag2 = 0
+
+        self.segmentedImg = None
+        self.gridLayout = None
+        self.otsuValue = None
+        self.prevWidget = None
+        self.segPath = None
+
         self.sliderMin = MAXVAL 
         self.sliderMax = MAXVAL
         self.slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
@@ -403,8 +453,6 @@ class CustomSlider(QtWidgets.QWidget):
         self.numbox.setMaximum(self.sliderMax)
         #self.slider.setValue(MAXVAL -500000)
 
-        print(self.slider.minimum())
-        print(self.slider.maximum())
 
         layout = QtWidgets.QHBoxLayout(self)
         layout.addWidget(self.numbox)
@@ -412,17 +460,85 @@ class CustomSlider(QtWidgets.QWidget):
 
     @QtCore.pyqtSlot(int)
     def handleSliderValueChange(self, value):
-        self.numbox.setValue(value)
+        tempVal = float(value / 10000)
+        self.imgClear(self.prevWidget)
+
+        self.numbox.setValue(tempVal)
+
+        self.flag1 = 1
+        if self.flag1 == 1:
+            self.handleSegmentedImgValue(tempVal)
+            temp = self.makeWidget()
+            print("temp : ",temp)
+            print("grid : ",self.gridLayout)
+            self.gridLayout.addWidget(temp, 1, 1, 1, 1)
+            self.prevWidget = temp
+            self.flag1 = 0
+        
 
     @QtCore.pyqtSlot(int)
     def handleNumboxValueChange(self, value):
         # Prevent values outside slider range
-        if value < self.slider.minimum():
-            self.numbox.setValue(self.slider.minimum())
-        elif value > self.slider.maximum():
-            self.numbox.setValue(self.slider.maximum())
+        tempVal = float(value/10000)
+        self.flag2 = 1
+        self.imgClear(self.prevWidget)
 
-        self.slider.setValue(self.numbox.value())
+        if tempVal < float(self.slider.minimum() / 10000):
+            self.numbox.setValue(float(self.slider.minimum() / 10000))
+        elif tempVal > float(self.slider.maximum() /10000):
+            self.numbox.setValue(float(self.slider.maximum()/10000))
+
+        if self.flag2 ==1 :
+            self.slider.setValue(float(self.numbox.value()/10000) )
+            self.handleSegmentedImgValue(tempVal)
+            temp = self.makeWidget()
+            self.gridLayout.addWidget(temp, 1, 1, 1, 1)
+            self.prevWidget = temp
+            self.flag2 = 0
+
+    def setImg(self,img):
+        self.segmentedImg = img
+
+    def setHighVal(self,highVal):
+        self.otsuValue = highVal
+
+    def setGrid(self,grid):
+        self.gridLayout = grid
+
+    def setWidget(self,imgWidget):
+        self.prevWidget = imgWidget
+
+    def setSegPath(self,segPath):
+        self.segPath = segPath
+
+    def handleSegmentedImgValue(self,lowValue):
+        tempLow = lowValue
+        tempHigh = self.otsuValue
+        tempImg = self.segmentedImg
+
+        lowt = (tempImg > tempLow).astype(float)
+        hight = (tempImg > tempHigh).astype(float)
+        hyst = filters.apply_hysteresis_threshold(tempImg, tempLow, tempHigh)
+        #hyst = hyst.astype('bool')
+
+        self.segmentedImg = morphology.remove_small_objects(hyst,50)
+        self.segmentedImg.dtype='uint8'
+        cv2.imwrite('segmentedImg.png', self.segmentedImg *255)
+
+    def makeWidget(self):
+        frame03 = QWidget() #Replace it with any frame you will putting this label_image on it
+        label_Image03 = QLabel(frame03)
+        image_profile03 = QImage(self.segPath) #QImage object
+
+        image_profile03 = image_profile03.scaled(250,250, aspectRatioMode=QtCore.Qt.KeepAspectRatio, transformMode=QtCore.Qt.SmoothTransformation) # To scale image for example and keep its Aspect Ration    
+        label_Image03.setPixmap(QtGui.QPixmap.fromImage(image_profile03))
+        return label_Image03
+
+
+    def imgClear(self,imgWidget):
+        print("clear widget : ",imgWidget)
+        self.gridLayout.removeWidget(imgWidget)
+
 
 
 if __name__ == "__main__":

@@ -113,7 +113,11 @@ class rotateMorphSeg():
         self.claheImg = None
         self.invertImg = None
         self.rotateMorImg = None
+        self.prevSegImg =None
         self.segmentedImg = None
+        self.highValue =None
+        self.lowValue = None
+
         self.setAlgorithm()
 
     def setAlgorithm(self):
@@ -144,15 +148,15 @@ class rotateMorphSeg():
         self.rotateMorImg = np.subtract(rotateFirstEq,rotateSecondEq)
         skimage.io.imsave('rotateMorpImh.png',self.rotateMorImg)
 
-        low = 0.15
-        high = threshold_otsu(self.rotateMorImg)
+        self.lowValue = 0.27
+        self.highValue = threshold_otsu(self.rotateMorImg)
 
-        temp = rpp.luminosity_contrast_normalization(self.rotateMorImg,blockSize,resizedVal)
-        temp = cv2.normalize(img_as_float(temp), None, 0.0, 1.0, cv2.NORM_MINMAX)
+        self.prevSegImg = rpp.luminosity_contrast_normalization(self.rotateMorImg,blockSize,resizedVal)
+        self.prevSegImg = cv2.normalize(img_as_float(self.prevSegImg), None, 0.0, 1.0, cv2.NORM_MINMAX)
 
-        lowt = (temp > low).astype(float)
-        hight = (temp > high).astype(float)
-        hyst = filters.apply_hysteresis_threshold(temp, low, high)
+        lowt = (self.prevSegImg > self.lowValue).astype(float)
+        hight = (self.prevSegImg > self.highValue).astype(float)
+        hyst = filters.apply_hysteresis_threshold(self.prevSegImg, self.lowValue, self.highValue)
         #hyst = hyst.astype('bool')
 
         self.segmentedImg = morphology.remove_small_objects(hyst,50)
@@ -164,6 +168,27 @@ class rotateMorphSeg():
         #self.rotateMorImg = interval_mapping(self.rotateMorImg,0.0,1.0,0,255).astype('uint8')
         return self.oriImg,self.claheImg,self.rotateMorImg,self.segmentedImg
 
+    def getPrevSegImg(self):
+        return self.prevSegImg
+
+    def getSegmentedHighValue(self):
+        return self.highValue
+
+    def changeSegmentedLowValue(self, img, lowValue, highValue):
+        # low value => get from slider
+        # and another values are already fixed
+        tempLow = lowValue
+        tempHigh = highValue
+        tempImg = img
+
+        lowt = (tempImg > tempLow).astype(float)
+        hight = (tempImg > tempHigh).astype(float)
+        hyst = filters.apply_hysteresis_threshold(tempImg, tempLow, tempHigh)
+        #hyst = hyst.astype('bool')
+
+        self.segmentedImg = morphology.remove_small_objects(hyst,50)
+        self.segmentedImg.dtype='uint8'
+        cv2.imwrite('segmentedImg.png', self.segmentedImg *255)
 
 
 
